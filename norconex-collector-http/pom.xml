@@ -1,5 +1,5 @@
 <!-- 
-   Copyright 2013-2017 Norconex Inc.
+   Copyright 2013-2020 Norconex Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.norconex.collectors</groupId>
-  <artifactId>norconex-collector-http-casm</artifactId>
-  <version>2.9.12</version>
+  <artifactId>norconex-collector-http</artifactId>
+  <version>2.9.1-SNAPSHOT</version>
   <name>Norconex HTTP Collector</name>
 
   <properties>
@@ -30,13 +30,6 @@
     <jetty.version>9.2.20.v20161216</jetty.version>
   </properties>
   <inceptionYear>2009</inceptionYear>
-
-  <parent>
-    <groupId>uk.ac.susx.tag</groupId>
-    <artifactId>tag-dist</artifactId>
-    <version>1.0.8</version>
-    <relativePath>../../tag-dist/pom.xml</relativePath>
-  </parent>
 
   <licenses>
     <license>
@@ -56,7 +49,7 @@
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-    </repository>
+    </repository> 
   </repositories>
 
   <dependencies>
@@ -261,11 +254,11 @@
           <source>1.7</source>
           <detectLinks>false</detectLinks>
           <links>
-            <link>https://www.norconex.com/product/commons-lang/apidocs/</link>
-            <link>https://www.norconex.com/jef/api/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/importer/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/committer-core/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/collector-core/latest/apidocs/</link>
+            <link>https://opensource.norconex.com/commons/lang/v1/apidocs/</link>
+            <link>https://opensource.norconex.com/jef/api/v4/apidocs/</link>
+            <link>https://opensource.norconex.com/importer/v2/apidocs/</link>
+            <link>https://opensource.norconex.com/committers/core/v2/apidocs/</link>
+            <link>https://opensource.norconex.com/collectors/core/v1/apidocs/</link>
             <link>https://commons.apache.org/proper/commons-configuration/javadocs/v1.10/apidocs/</link>
             <link>https://api.mongodb.com/java/current/</link>
             <link>https://commons.apache.org/proper/commons-lang/javadocs/api-3.5/</link>
@@ -327,20 +320,21 @@
           </execution>
         </executions>
       </plugin>
-<!--      <plugin>-->
-<!--        <groupId>org.apache.maven.plugins</groupId>-->
-<!--        <artifactId>maven-gpg-plugin</artifactId>-->
-<!--        <version>1.6</version>-->
-<!--        <executions>-->
-<!--          <execution>-->
-<!--            <id>sign-artifacts</id>-->
-<!--            <phase>verify</phase>-->
-<!--            <goals>-->
-<!--              <goal>sign</goal>-->
-<!--            </goals>-->
-<!--          </execution>-->
-<!--        </executions>-->
-<!--      </plugin>-->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -364,17 +358,18 @@
           </execution>
         </executions>
       </plugin>
-<!--      <plugin>-->
-<!--        <groupId>org.sonatype.plugins</groupId>-->
-<!--        <artifactId>nexus-staging-maven-plugin</artifactId>-->
-<!--        <version>1.6.3</version>-->
-<!--        <extensions>true</extensions>-->
-<!--        <configuration>-->
-<!--          <serverId>ossrh</serverId>-->
-<!--          <nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
-<!--          <autoReleaseAfterClose>false</autoReleaseAfterClose>-->
-<!--        </configuration>-->
-<!--      </plugin>-->
+       -->
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.3</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>false</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -399,21 +394,22 @@
     </plugins>
   </build>
   
-<!--  <distributionManagement>-->
-<!--    <site>-->
-<!--      <id>norconex-site-deployment</id>-->
-<!--      <url>${site.baseurl}/collectors/collector-http/latest</url>-->
-<!--    </site>-->
-<!--    <snapshotRepository>-->
-<!--      <id>ossrh</id>-->
-<!--      <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
-<!--    </snapshotRepository>-->
-<!--    <repository>-->
-<!--      <id>ossrh</id>-->
-<!--      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
-<!--    </repository>    -->
-<!--  </distributionManagement>-->
+  <distributionManagement>
+    <site>
+      <id>norconex-site-deployment</id>
+      <url>${site.baseurl}/collectors/http/v2</url>
+    </site>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>    
+  </distributionManagement>
   
+  <!--
   <reporting>
     <plugins>
       <plugin>
@@ -443,7 +439,7 @@
           <header><![CDATA[
             <style>div.aboutLanguage .siteLink {font-size: 2em;}</style>
             <span class="siteLink">
-              <a href="https://www.norconex.com/collectors/collector-http">Norconex HTTP Collector</a>
+              <a href="https://opensource.norconex.com/collectors/http">Norconex HTTP Collector</a>
             </span>
             ]]>
           </header>
@@ -469,11 +465,11 @@
           <source>1.7</source>
           <detectLinks>false</detectLinks>
           <links>
-            <link>https://www.norconex.com/product/commons-lang/apidocs/</link>
-            <link>https://www.norconex.com/jef/api/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/importer/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/committer-core/latest/apidocs/</link>
-            <link>https://www.norconex.com/collectors/collector-core/latest/apidocs/</link>
+            <link>https://opensource.norconex.com/commons/lang/v1/apidocs/</link>
+            <link>https://opensource.norconex.com/jef/api/v4/apidocs/</link>
+            <link>https://opensource.norconex.com/importer/v2/apidocs/</link>
+            <link>https://opensource.norconex.com/committers/core/v2/apidocs/</link>
+            <link>https://opensource.norconex.com/collectors/core/v1/apidocs/</link>
             <link>https://commons.apache.org/proper/commons-configuration/javadocs/v1.10/apidocs/</link>
             <link>https://commons.apache.org/proper/commons-collections/apidocs/</link>
             <link>https://api.mongodb.com/java/current/</link>
@@ -495,13 +491,14 @@
         </reportSets>
       </plugin>
     </plugins>
-  </reporting>  
+  </reporting>
+  -->
 
   <organization>
     <name>Norconex Inc.</name>
     <url>https://www.norconex.com</url>
   </organization>
-  <url>https://www.norconex.com/collectors/collector-http</url>
+  <url>https://opensource.norconex.com/collectors/http</url>
   <description>Norconex HTTP Collector is a web spider, or crawler that aims to be very flexible, easy to extend, and portable</description>
   <issueManagement>
     <system>GitHub</system>
