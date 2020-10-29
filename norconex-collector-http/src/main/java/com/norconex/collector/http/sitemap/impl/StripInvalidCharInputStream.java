@@ -5,12 +5,12 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 
-class StripInvalidCharInputStream extends FilterInputStream {
+public class StripInvalidCharInputStream extends FilterInputStream {
     private static Logger logger = LogManager.getLogger(StripInvalidCharInputStream.class);
 
     private boolean started;
 
-    protected StripInvalidCharInputStream(InputStream in) {
+    public StripInvalidCharInputStream(InputStream in) {
         super(in);
         started = false;
     }

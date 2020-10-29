@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLStreamException;
 
+import com.norconex.collector.http.sitemap.impl.StripInvalidCharInputStream;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -139,7 +140,7 @@ public class XMLFeedLinkExtractor implements ILinkExtractor, IXMLConfigurable {
             FeedHandler handler = new FeedHandler(reference, links);
             xmlReader.setContentHandler(handler);
             xmlReader.setErrorHandler(handler);
-            xmlReader.parse(new InputSource(input));
+            xmlReader.parse(new InputSource(new StripInvalidCharInputStream(input)));
         } catch (SAXException e) {
             throw new CollectorException(
                     "Could not parse XML Feed: " + reference, e);

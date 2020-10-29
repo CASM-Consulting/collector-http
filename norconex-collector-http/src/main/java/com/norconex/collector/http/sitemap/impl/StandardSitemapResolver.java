@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
+import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -366,7 +367,9 @@ public class StandardSitemapResolver implements ISitemapResolver {
                 }
                 switch(event) {
                     case XMLStreamConstants.START_ELEMENT:
-                        String tag = xmlReader.getLocalName();
+                        QName name = xmlReader.getName();
+//                        String tag = xmlReader.getLocalName();
+                        String tag = name.getPrefix() + name.getLocalPart();
                         parseStartElement(parseState, tag);
                         break;
                     case XMLStreamConstants.CHARACTERS:
@@ -441,6 +444,7 @@ public class StandardSitemapResolver implements ISitemapResolver {
     }
 
     private void parseCharacters(ParseState parseState, String value) {
+        value = value.trim();
         if (parseState.loc) {
             parseState.baseURL.setReference(value);
             parseState.loc = false;
