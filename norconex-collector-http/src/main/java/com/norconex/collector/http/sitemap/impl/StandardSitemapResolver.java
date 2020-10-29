@@ -1,4 +1,4 @@
-/* Copyright 2010-2017 Norconex Inc.
+/* Copyright 2010-2020 Norconex Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+import com.norconex.collector.core.CollectorException;
 import com.norconex.collector.http.crawler.HttpCrawlerConfig;
 import com.norconex.collector.http.data.HttpCrawlData;
 import com.norconex.collector.http.sitemap.ISitemapResolver;
@@ -69,6 +70,8 @@ import com.norconex.commons.lang.file.FileUtil;
  * in a sub-directory applies only to URLs found in that sub-directory and
  * its children. This behavior is respected by default.  Setting lenient
  * to <code>true</code> no longer honors this restriction.
+ * <b>Since 2.9.1</b>, setting lenient will also attempt to parse
+ * XML values with invalid entities.
  * </p>
  * <h3>Since 2.3.0</h3>
  * <p>
@@ -112,10 +115,8 @@ public class StandardSitemapResolver implements ISitemapResolver {
     private boolean stopped;
     private File tempDir;
     private String[] sitemapPaths = DEFAULT_SITEMAP_PATHS;
-    private long from;
+    private long fromDate;
     private boolean escalateErrors;
-
-
 
     public StandardSitemapResolver(
             File tempDir,
@@ -123,8 +124,8 @@ public class StandardSitemapResolver implements ISitemapResolver {
         super();
         this.tempDir = tempDir;
         this.sitemapStore = sitemapStore;
-        from = -1;
-        escalateErrors = false;
+        this.fromDate = -1;
+        this.escalateErrors = false;
     }
 
     /**
@@ -220,16 +221,39 @@ public class StandardSitemapResolver implements ISitemapResolver {
         this.lenient = lenient;
     }
 
-    public long getFrom() {
-        return from;
-    }
-    public void setFrom(long from) {
-        this.from = from;
+    /**
+     * Gets the minimum EPOCH date (in milliseconds) a sitemap entry
+     * should have to be considered.
+     * @return from date
+     * @since 2.9.1
+     */
+    public long getFromDate() {
+        return fromDate;
     }
 
+    /**
+     * Sets the minimum EPOCH date (in milliseconds) a sitemap entry
+     * should have to be considered.
+     * @param fromDate from date
+     * @since 2.9.1
+     */
+    public void setFromDate(long fromDate) {
+        this.fromDate = fromDate;
+    }
+
+    /**
+     * Gets whether errors should be thrown instead of logged.
+     * @return <code>true</code> if throwing errors
+     * @since 2.9.1
+     */
     public boolean isEscalateErrors() {
         return escalateErrors;
     }
+    /**
+     * Sets whether errors should be thrown instead of logged.
+     * @param escalateErrors <code>true</code> if throwing errors
+     * @since 2.9.1
+     */
     public void setEscalateErrors(boolean escalateErrors) {
         this.escalateErrors = escalateErrors;
     }
@@ -258,7 +282,7 @@ public class StandardSitemapResolver implements ISitemapResolver {
     }
 
     private void resolveLocation(String location, HttpClient httpClient,
-                                 SitemapURLAdder sitemapURLAdder, Set<String> resolvedLocations) {
+            SitemapURLAdder sitemapURLAdder, Set<String> resolvedLocations) {
 
         if (resolvedLocations.contains(location)) {
             return;
@@ -280,8 +304,9 @@ public class StandardSitemapResolver implements ISitemapResolver {
             if (statusCode == HttpStatus.SC_OK) {
                 LOG.info("Resolving sitemap: " + location);
                 InputStream is = response.getEntity().getContent();
-                Header header = response.getFirstHeader("Content-Type");
-                if(header != null && header.getValue().endsWith("gzip") || location.endsWith(".gz")) {
+                Header ctHeader = response.getFirstHeader("Content-Type");
+                if((ctHeader != null && ctHeader.getValue().endsWith("gzip"))
+                        || location.endsWith(".gz")) {
                     is = new GZIPInputStream(is);
                 }
                 File sitemapFile = inputStreamToTempFile(is);
@@ -292,33 +317,37 @@ public class StandardSitemapResolver implements ISitemapResolver {
             } else if (statusCode == HttpStatus.SC_NO_CONTENT) {
                 LOG.info("         Resolved: " + location + " but no content.");
             } else if (statusCode == HttpStatus.SC_NOT_FOUND) {
-                LOG.debug("Sitemap not found : " + location);
-                if(escalateErrors) {
-                    throw new RuntimeException("Sitemap not found : " + location);
+                String msg = "Sitemap not found : " + location;
+                if (escalateErrors) {
+                    throw new CollectorException(msg);
+                } else {
+                    LOG.debug(msg);
                 }
             } else {
-                LOG.error("Could not obtain sitemap: " + location
+                String msg = "Could not obtain sitemap: " + location
                         + ".  Expected status code " + HttpStatus.SC_OK
-                        + ", but got " + statusCode);
-                if(escalateErrors) {
-                    throw new RuntimeException("Could not obtain sitemap: " + location
-                            + ".  Expected status code " + HttpStatus.SC_OK
-                            + ", but got " + statusCode);
+                        + ", but got " + statusCode;
+                if (escalateErrors) {
+                    throw new CollectorException(msg);
+                } else {
+                    LOG.error(msg);
                 }
             }
         } catch (XMLStreamException e) {
-            LOG.error("Cannot fetch sitemap: " + location
+            String msg = "Cannot fetch sitemap: " + location
                     + " -- Likely an invalid sitemap XML format causing "
-                    + "a parsing error (actual error: "
-                    + e.getMessage() + ").");
-            if(escalateErrors) {
-                throw new RuntimeException(e);
+                    + "a parsing error.";
+            if (escalateErrors) {
+                throw new CollectorException(msg, e);
+            } else {
+                LOG.error(msg + " (" + e.getMessage() + ")");
             }
         } catch (Exception e) {
-            LOG.error("Cannot fetch sitemap: " + location
-                    + " (" + e.getMessage() + ")");
-            if(escalateErrors) {
-                throw new RuntimeException(e);
+            String msg = "Cannot fetch sitemap: " + location;
+            if (escalateErrors) {
+                throw new CollectorException(msg, e);
+            } else {
+                LOG.error(msg + " (" + e.getMessage() + ")");
             }
         } finally {
             resolvedLocations.add(location);
@@ -348,13 +377,17 @@ public class StandardSitemapResolver implements ISitemapResolver {
 
 
     private void parseLocation(File sitemapFile, HttpClient httpClient,
-                               SitemapURLAdder sitemapURLAdder, Set<String> resolvedLocations,
-                               String location) throws XMLStreamException, IOException {
+           SitemapURLAdder sitemapURLAdder, Set<String> resolvedLocations,
+           String location) throws XMLStreamException, IOException {
 
-        try (FileInputStream fis = new FileInputStream(sitemapFile)) {
+        try (InputStream is = lenient
+                ? new StripInvalidCharInputStream(
+                        new FileInputStream(sitemapFile))
+                : new FileInputStream(sitemapFile)) {
             XMLInputFactory inputFactory = XMLInputFactory.newInstance();
             inputFactory.setProperty(XMLInputFactory.IS_COALESCING, true);
-            XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(new StripInvalidCharInputStream(fis));
+            XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
+
             ParseState parseState = new ParseState();
 
             String locationDir = StringUtils.substringBeforeLast(location, "/");
@@ -368,25 +401,18 @@ public class StandardSitemapResolver implements ISitemapResolver {
                 switch(event) {
                     case XMLStreamConstants.START_ELEMENT:
                         QName name = xmlReader.getName();
-//                        String tag = xmlReader.getLocalName();
                         String tag = name.getPrefix() + name.getLocalPart();
                         parseStartElement(parseState, tag);
                         break;
                     case XMLStreamConstants.CHARACTERS:
                         String value = xmlReader.getText();
-//                    if (parseState.sitemapIndex && parseState.loc && passedFrom(parseState)) {
-//                        resolveLocation(value, httpClient,
-//                                sitemapURLAdder, resolvedLocations);
-//                        parseState.loc = false;
-//                    } else if (parseState.baseURL != null) {
-//                        parseCharacters(parseState, value);
-//                    }
                         parseCharacters(parseState, value);
                         break;
                     case XMLStreamConstants.END_ELEMENT:
-                        tag = xmlReader.getLocalName();
-                        parseEndElement(
-                                sitemapURLAdder, parseState, locationDir, tag, httpClient, resolvedLocations);
+                        name = xmlReader.getName();
+                        tag = name.getPrefix() + name.getLocalPart();
+                        parseEndElement(sitemapURLAdder, parseState,
+                                locationDir, tag, httpClient, resolvedLocations);
                         break;
                 }
                 if (!xmlReader.hasNext()) {
@@ -398,35 +424,33 @@ public class StandardSitemapResolver implements ISitemapResolver {
         FileUtil.delete(sitemapFile);
     }
 
-    private boolean passedFrom(ParseState parseState) {
+    private boolean isRecentEnough(ParseState parseState) {
         Long lastMod = parseState.baseURL.getSitemapLastMod();
-        if(from > 0 && lastMod != null) {
-            if(lastMod > from) {
-                return true;
-            } else {
-                return false;
-            }
+        if(fromDate > 0 && lastMod != null) {
+            return lastMod > fromDate;
         } else {
             return true;
         }
     }
 
     private void parseEndElement(SitemapURLAdder sitemapURLAdder,
-                                 ParseState parseState, String locationDir, String tag,
-                                 HttpClient httpClient, Set<String> resolvedLocations) {
+             ParseState parseState, String locationDir, String tag,
+             HttpClient httpClient, Set<String> resolvedLocations) {
+
         if ("sitemap".equalsIgnoreCase(tag)) {
-            if(passedFrom(parseState)) {
-                resolveLocation(parseState.baseURL.getReference(), httpClient, sitemapURLAdder, resolvedLocations);
+            if(isRecentEnough(parseState)) {
+                resolveLocation(parseState.baseURL.getReference(),
+                        httpClient, sitemapURLAdder, resolvedLocations);
             } else {
                 LOG.info("Sitemap Index rejected, too old."
                         + " URL:" + parseState.baseURL.getReference());
             }
-
+            //close sitemap here because it contains other elements
             parseState.sitemapIndex = false;
         } else if("url".equalsIgnoreCase(tag)
                 && parseState.baseURL.getReference() != null){
             if (isRelaxed(parseState, locationDir)) {
-                if(passedFrom(parseState)) {
+                if(isRecentEnough(parseState)) {
                     sitemapURLAdder.add(parseState.baseURL);
                 }
             } else if (LOG.isDebugEnabled()) {
@@ -446,6 +470,7 @@ public class StandardSitemapResolver implements ISitemapResolver {
     private void parseCharacters(ParseState parseState, String value) {
         value = value.trim();
         if (parseState.loc) {
+            //applies in both <url> and <sitemap> nodes
             parseState.baseURL.setReference(value);
             parseState.loc = false;
         } else if (parseState.lastmod) {
@@ -473,6 +498,7 @@ public class StandardSitemapResolver implements ISitemapResolver {
     private void parseStartElement(ParseState parseState, String tag) {
         if("sitemap".equalsIgnoreCase(tag)) {
             parseState.sitemapIndex = true;
+            //baseURL is required here to allow 'from' sitemap index pruning
             parseState.baseURL = new HttpCrawlData("", 0);
         } else if("url".equalsIgnoreCase(tag)){
             parseState.baseURL = new HttpCrawlData("", 0);

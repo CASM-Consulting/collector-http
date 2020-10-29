@@ -8,6 +8,15 @@
   <body>
 
     <release version="2.9.1-SNAPSHOT" date="2020-??-??" description="Maintenance release">
+    
+      <action dev="simonwibberley" type="add" issue="718">
+        StandardSiteMapResolver can now optionally filter entries that 
+        are older than a given date. 
+      </action>
+      <action dev="simonwibberley" type="add" issue="718">
+        StandardSiteMapResolver can now optionally throw exception instead
+        of logging errors. 
+      </action>
       <action dev="simonwibberley" type="update" issue="697">
         Generic canonical link detector now supports non-standard
         canonical URL definition using meta "property" instead of "rel".
@@ -32,6 +41,10 @@
         triggers a detection attempt of both encoding and content type 
         based on document content. 
       </action>
+      <action dev="essiembre" type="update">
+        Norconex JEF 4.1.3, Norconex Commons Lang 1.15.2, 
+        Norconex Collector Core 1.10.1.
+      </action>      
       <action dev="essiembre" type="fix" issue="678">
         Fixed REJECTED_REDIRECTED event not being fired for the redirect 
         source URL when the target URL was previously encountered. 
