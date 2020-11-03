@@ -17,11 +17,12 @@ package com.norconex.collector.http.sitemap.impl;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-class StripInvalidCharInputStream extends FilterInputStream {
+public class StripInvalidCharInputStream extends FilterInputStream {
     private static final Logger LOG = LogManager.getLogger(
             StripInvalidCharInputStream.class);
 
@@ -29,9 +30,12 @@ class StripInvalidCharInputStream extends FilterInputStream {
 
     private boolean started;
 
-    protected StripInvalidCharInputStream(InputStream in) {
+    private final Pattern validAmpSuffix;
+
+    public StripInvalidCharInputStream(InputStream in) {
         super(in);
         started = false;
+        validAmpSuffix = Pattern.compile("(?i)^&(#[0-9]+|#x[0-9a-f]+|amp|quot|apos|lt|gt);.*");
     }
 
     @Override
@@ -72,15 +76,14 @@ class StripInvalidCharInputStream extends FilterInputStream {
         }
     }
 
-    public static boolean isInvalid(byte[] cbuf, int pos) {
+    public boolean isInvalid(byte[] cbuf, int pos) {
         if (AMP_BYTE != cbuf[pos]) {
             return false;
         }
         // Grabs up to 20 bytes to check if a valid entity.
         // Not the most efficient, but handles more cases.
         String txt = new String(cbuf, pos, Math.min(20, cbuf.length - pos));
-        return !txt.matches(
-                "(?i)^&(#[0-9]+|#x[0-9a-f]+|amp|quot|apos|lt|gt);.*");
+        return !validAmpSuffix.matcher(txt).matches();
     }
 
     public static boolean isInvalid(byte c) {
